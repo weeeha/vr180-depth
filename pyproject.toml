@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vr180-depth"
+version = "0.1.0"
+description = "Turn VR180 / side-by-side stereo video into per-frame depth maps."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "opencv-python-headless>=4.8",
+]
+
+[project.optional-dependencies]
+ai = [
+  "torch>=2.2",
+  "transformers>=4.45",
+  "pillow>=10",
+]
+dev = ["pytest>=8"]
+
+[project.scripts]
+vr180-depth = "vr180_depth.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vr180_depth"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
