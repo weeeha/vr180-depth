@@ -38,6 +38,8 @@ def _add_settings(p: argparse.ArgumentParser) -> None:
     g.add_argument("--no-fill", action="store_true", help="leave stereo holes empty")
     g.add_argument("--ai", action="store_true", help="refine with Depth Anything V2 (needs the [ai] extras)")
     g.add_argument("--ai-model", default=DEFAULT_MODEL)
+    g.add_argument("--ai-tolerance", type=float, default=d.ai_tolerance,
+                   help="stereo replaces AI where they disagree by more than this fraction")
     g.add_argument("--no-preview", action="store_true", help="skip preview.mp4 / preview.png")
 
 
@@ -47,7 +49,7 @@ def _settings(a: argparse.Namespace) -> Settings:
         width=a.width, height=a.height, fov_deg=a.fov, pitch_deg=a.pitch,
         baseline_m=a.baseline, min_depth_m=a.min_depth, near_m=a.near, far_m=a.far,
         block_size=a.block_size, align=a.align, fill=not a.no_fill,
-        ai=a.ai, ai_model=a.ai_model, every=a.every, start=a.start,
+        ai=a.ai, ai_model=a.ai_model, ai_tolerance=a.ai_tolerance, every=a.every, start=a.start,
         max_frames=a.max_frames, preview=not a.no_preview,
     )
 

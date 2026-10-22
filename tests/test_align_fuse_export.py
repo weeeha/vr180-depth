@@ -4,7 +4,7 @@ import pytest
 
 from vr180_depth.align import estimate_vertical_offset, shift_vertical
 from vr180_depth.export import depth_to_matte16, depth_to_mm16
-from vr180_depth.fuse import fit_scale_offset
+from vr180_depth.fuse import fit_scale_offset, fuse
 
 
 def _textured(h=360, w=640, seed=0):
@@ -31,6 +31,19 @@ def test_fit_scale_offset_ignores_outliers():
     scale, offset = fit_scale_offset(rel, disp)
     assert scale == pytest.approx(2.5, rel=0.01)
     assert offset == pytest.approx(3.0, rel=0.01)
+
+
+def test_fuse_keeps_stereo_where_ai_misses_depth():
+    # AI sees a flat wall; stereo sees a card at 3x the wall's disparity.
+    relative = np.ones((100, 100))
+    disparity = np.full((100, 100), 5.0)
+    disparity[40:60, 40:60] = 15.0
+    disparity[0, :] = np.nan  # stereo hole: AI fills it
+    fused, stereo_share = fuse(relative, disparity, scale=5.0, offset=0.0)
+    assert fused[50, 50] == pytest.approx(15.0)
+    assert fused[10, 10] == pytest.approx(5.0)
+    assert fused[0, 5] == pytest.approx(5.0)
+    assert stereo_share == pytest.approx(0.04)
 
 
 def test_matte_endpoints():

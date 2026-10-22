@@ -13,7 +13,7 @@ import numpy as np
 from . import __version__
 from .align import estimate_vertical_offset, shift_vertical
 from .export import depth_to_matte16, depth_to_mm16, preview_frame
-from .fuse import DEFAULT_MODEL, fit_scale_offset
+from .fuse import DEFAULT_MODEL, fit_scale_offset, fuse
 from .projection import PinholeView, apply_maps, equirect_to_pinhole_maps, split_stereo
 from .stereo import compute_disparity, disparity_to_depth, fill_holes, max_disparity_for
 
@@ -38,6 +38,7 @@ class Settings:
     fill: bool = True
     ai: bool = False
     ai_model: str = DEFAULT_MODEL
+    ai_tolerance: float = 0.2  # stereo overrides AI past this relative gap
     every: int = 1
     start: int = 0
     max_frames: int | None = None
@@ -50,6 +51,7 @@ class FrameResult:
     depth_m: np.ndarray
     vertical_offset_px: float
     fit: tuple[float, float] | None
+    stereo_share: float | None = None  # with --ai: pixels where stereo overrode AI
 
 
 class FrameProcessor:
@@ -97,7 +99,7 @@ class FrameProcessor:
 
         disp = compute_disparity(lg, rg, num_disp, self.s.block_size)
 
-        fit = None
+        fit = stereo_share = None
         if self._mono is not None:
             rel = self._mono(left)
             new = fit_scale_offset(rel, disp)
@@ -109,14 +111,13 @@ class FrameProcessor:
                 )
             if self._fit is not None:
                 fit = self._fit
-                disp = (fit[0] * rel + fit[1]).astype(np.float32)
-                disp[disp <= 1e-3] = np.nan
+                disp, stereo_share = fuse(rel, disp, fit[0], fit[1], self.s.ai_tolerance)
 
         if fit is None and self.s.fill:
             disp = fill_holes(disp)
 
         depth = disparity_to_depth(disp, f, self.s.baseline_m)
-        return FrameResult(left, depth, dy, fit)
+        return FrameResult(left, depth, dy, fit, stereo_share)
 
 
 def iter_frames(path: Path, start: int = 0, every: int = 1) -> Iterator[tuple[int, np.ndarray]]:
@@ -190,7 +191,10 @@ def run(input_path: str | Path, out_dir: str | Path, s: Settings, log: Callable[
         if written == 1 or written % 10 == 0:
             valid = np.isfinite(r.depth_m)
             med = float(np.nanmedian(r.depth_m)) if valid.any() else float("nan")
-            log(f"frame {idx}: {valid.mean():.0%} valid, median depth {med:.2f} m")
+            msg = f"frame {idx}: {valid.mean():.0%} valid, median depth {med:.2f} m"
+            if r.stereo_share is not None:
+                msg += f", stereo overrode AI on {r.stereo_share:.0%}"
+            log(msg)
     if writer is not None:
         writer.release()
     if written == 0:

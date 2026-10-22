@@ -34,7 +34,7 @@ The matte ramp is linear in 1/depth, so most grey levels land in the near range 
 2. Cut a flat view out of both VR180 eyes with the same virtual lens. Two parallel cameras seen through one lens model form a rectified pair: a point sits on the same row in both images.
 3. Measure the vertical offset between the eyes from feature matches and cancel it. Real lenses are never perfectly level, and row matching fails on even a 2 px offset.
 4. Match the eyes with OpenCV SGBM. The horizontal shift (disparity) becomes distance: `depth = focal_px × baseline / disparity`.
-5. Optional `--ai`: Depth Anything V2 gives sharp, dense depth without real scale. Each frame it is fitted to the stereo result with one scale and one offset, so the output keeps the AI's detail and the stereo's metres.
+5. Optional `--ai`: Depth Anything V2 gives sharp, dense depth without real scale. Each frame it is fitted to the stereo result with one scale and one offset, so the output keeps the AI's detail and the stereo's metres. Where valid stereo disagrees with the fitted AI by more than 20% (`--ai-tolerance`), stereo wins: a still-image model can miss depth that has no visual cue, and stereo measures it directly.
 
 ## AI refinement
 
@@ -62,6 +62,7 @@ The first run downloads Depth Anything V2 Small (about 100 MB). It runs on Apple
 
 - One forward view per run. Turning the view sideways (yaw) breaks rectification, so only `--pitch` is offered.
 - Depth Anything V2 is a still-image model. The per-frame fit is smoothed, but expect some flicker on video.
+- `--ai` has been run on the synthetic demo only, which has no visual depth cues, so the stereo guard did most of the work there. It still needs testing on real Calf footage.
 - Plain stereo gives soft edges and fills occlusion holes from the background.
 
 ## Roadmap

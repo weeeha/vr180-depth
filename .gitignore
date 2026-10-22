@@ -6,6 +6,7 @@ dist/
 build/
 out/
 demo-out/
+demo-ai/
 *.mp4
 *.mov
 .DS_Store

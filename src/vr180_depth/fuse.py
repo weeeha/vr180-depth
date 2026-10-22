@@ -44,6 +44,26 @@ def fit_scale_offset(
     return float(scale), float(offset)
 
 
+def fuse(
+    relative: np.ndarray,
+    disparity: np.ndarray,
+    scale: float,
+    offset: float,
+    tolerance: float = 0.2,
+) -> tuple[np.ndarray, float]:
+    """AI disparity, except where valid stereo disagrees by more than
+    ``tolerance`` (relative). A still-image model can miss depth that has no
+    visual cue; stereo measures it, so stereo wins those pixels. Returns the
+    fused disparity and the fraction of pixels stereo overrode.
+    """
+    ai = scale * relative + offset
+    with np.errstate(invalid="ignore"):
+        disagree = np.isfinite(disparity) & (np.abs(ai - disparity) > tolerance * disparity)
+    out = np.where(disagree, disparity, ai).astype(np.float32)
+    out[~(out > 1e-3)] = np.nan
+    return out, float(disagree.mean())
+
+
 class MonoDepth:
     """Depth Anything V2 through Hugging Face transformers."""
 
