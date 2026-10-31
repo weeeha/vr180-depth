@@ -1,5 +1,13 @@
 # vr180-depth
 
+**Problem.** A VR180 camera records a left and a right eye but no depth, and compositing work such as fog, focus and relight mattes needs a depth value for every frame.
+
+**Idea.** Cut a flat view out of both eyes with the same virtual lens, cancel the vertical offset, match the eyes with OpenCV SGBM and turn disparity into distance. An optional Depth Anything V2 pass adds detail and is fitted to the stereo result so the metres stay real.
+
+**Built.** An exploration, v0.1, with no live URL: a Python package and `vr180-depth` command that writes a flat view, a 16-bit depth map in millimetres and a matte for each frame, plus a preview video. The `--ai` path has only run on the synthetic demo so far. 4 commits on 1 day, Oct 22, 2026.
+
+**Decision.** Stereo is the measurement and the AI model only adds detail. Where stereo disagrees with the fitted AI depth by more than 20%, stereo wins, because a still-image model can miss depth that has no visual cue.
+
 **Status:** exploration · v0.1 · no live URL
 
 Turn VR180 or side-by-side 3D video into per-frame depth maps for compositing. Made for the Calf Gen 1 VR180 camera; works with any parallel stereo rig.
